@@ -66,5 +66,7 @@ std::future<void> ThreadExecutor::addTask(std::function<void()> function) {
 void ThreadExecutor::join(){
     finish_execution_ = true; // must be set to finish executing all tasks or else will not stop
     cond_no_tasks_.notify_one(); // if thread was waiting for tasks continue execution
-	thread_.join();
+	if (thread_.joinable()){
+        thread_.join();
+    }
 }
