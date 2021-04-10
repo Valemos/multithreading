@@ -10,7 +10,7 @@ ThreadExecutor::ThreadExecutor() :
 
 ThreadExecutor::~ThreadExecutor()
 {
-    join();
+    stop();
 }
 
 int ThreadExecutor::task_count() const{
@@ -63,7 +63,7 @@ std::future<void> ThreadExecutor::addTask(std::function<void()> function) {
     return future_task;
 }
 
-void ThreadExecutor::join(){
+void ThreadExecutor::stop(){
     finish_execution_ = true; // must be set to finish executing all tasks or else will not stop
     cond_no_tasks_.notify_one(); // if thread was waiting for tasks continue execution
 	if (thread_.joinable()){

@@ -19,7 +19,7 @@ public:
 	// adds new task to queue, resumes execution for first task added
 	std::future<void> addTask(std::function<void()> task);
 	// waits for all tasks to finish, than returns
-	void join();
+	void stop();
 	bool isExecuting() const;
 	int task_count() const;
 

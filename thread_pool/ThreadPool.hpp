@@ -20,13 +20,11 @@ public:
 
 	std::future<void> addTask(std::function<void()> function);
 	TaskGroup createTaskGroup();
-	void joinAll();
-	
-	template<typename T>
-	std::future<T> addTaskWithResult(std::function<T()> function);
+	void stopAll();
 
 private:
 	std::vector<ThreadExecutor*> executors_;
+	ThreadExecutor* findBestExecutor();
 };
 
 template std::future<std::vector<int>> ThreadPool::addTaskWithResult(std::function<std::vector<int>()>);

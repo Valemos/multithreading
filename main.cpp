@@ -73,7 +73,7 @@ void transformMedianArray(std::shared_ptr<ThreadPool> pool, std::shared_ptr< std
 
 
 int main() {
-    ThreadPool main_pool;
+    ThreadPool main_pool(2);
     std::shared_ptr<ThreadPool> main_pool_ptr(&main_pool);
 
     std::vector<int> array_1(ARRAY_SIZE, 0), array_2(ARRAY_SIZE, 0), array_3(ARRAY_SIZE, 0);
@@ -88,17 +88,23 @@ int main() {
     task_group.waitTasksFinished();
     
     // task_group.addTask(std::bind(transformMedianArray, main_pool_ptr, array_ptr_1));
-
+    
     auto testFilter = [](int elem) {return elem % 2 == 0;};
-    auto result = main_pool.addTaskWithResult<std::vector<int>>(std::bind(filterArrayParallel, main_pool_ptr, array_ptr_2, testFilter));
-    array_operation::print(result.get());
+    std::shared_ptr<std::vector<int>> result_ptr(new std::vector<int>());
 
-    // todo: solve deadlock!
+    auto filterWrapper = [main_pool_ptr, array_ptr_2, testFilter, result_ptr]()
+    {
+        auto filtered = filterArrayParallel(main_pool_ptr, array_ptr_2, testFilter);
+        result_ptr->insert(result_ptr->begin(), filtered.begin(), filtered.end()); 
+    };
+
+    main_pool.addTask(filterWrapper).get();
+    array_operation::print(*result_ptr);
 
     // array_operation::print(array_1);
     // array_operation::print(array_2);
     // array_operation::print(array_3);
 
-    main_pool.joinAll();
+    main_pool.stopAll();
     return 0;
 }

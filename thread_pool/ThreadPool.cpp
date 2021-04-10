@@ -4,7 +4,7 @@
 #include <thread>
 
 ThreadPool::ThreadPool() : 
-    ThreadPool(std::thread::hardware_concurrency())
+    ThreadPool(std::thread::hardware_concurrency() - 1)
 {
 }
 
@@ -31,13 +31,7 @@ TaskGroup ThreadPool::createTaskGroup(){
 
 std::future<void> ThreadPool::addTask(std::function<void()> function) 
 {
-    // find thread executor with minimal load
-    ThreadExecutor* min_executor = executors_[0];
-    for (auto* executor : executors_){
-        if (min_executor->task_count() > executor->task_count()){
-            min_executor = executor;
-        }
-    }
+    ThreadExecutor* min_executor = findBestExecutor();
 
     if (min_executor->isExecuting()){
         return min_executor->addTask(function);
@@ -46,19 +40,19 @@ std::future<void> ThreadPool::addTask(std::function<void()> function)
     }
 }
 
-template<typename T>
-std::future<T> ThreadPool::addTaskWithResult(std::function<T()> function) {
-    std::shared_ptr<std::promise<T>> promise_ptr(new std::promise<T>());
-    auto result_future = promise_ptr->get_future();
-    addTask([promise_ptr, function](){
-        promise_ptr->set_value(function());
-    });
-    return result_future;
+ThreadExecutor* ThreadPool::findBestExecutor(){
+    ThreadExecutor* min_executor = executors_[0];
+    for (auto* executor : executors_){
+        if (min_executor->task_count() > executor->task_count()){
+            min_executor = executor;
+        }
+    }
+    return min_executor;
 }
 
-void ThreadPool::joinAll()
+void ThreadPool::stopAll()
 {
     for(auto* executor : executors_){
-        executor->join();
+        executor->stop();
     }
 }
