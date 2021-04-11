@@ -3,9 +3,10 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <algorithm>
 #include "concurrent_console.hpp"
 
-void array_operation::findMedian(std::shared_ptr<std::vector<int>> array, int* median) {
+void array_operation::findMedian(std::vector<int> *array, int* median) {
     *median = 42;
     // todo write quick select
 }
@@ -46,7 +47,7 @@ std::vector<int> array_operation::merge(const std::vector<int>& first, const std
     return result;
 }
 
-void array_operation::initializeRandom(std::shared_ptr< std::vector<int> > array){
+void array_operation::initializeRandom(std::vector<int> *array){
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
     std::uniform_int_distribution<int> distribution;
@@ -62,4 +63,45 @@ void array_operation::print(const std::vector<int>& array){
         console::printListElement<int>(elem);
     }
     std::cout << std::endl;
+}
+
+std::vector<int> array_operation::filterParallel(ThreadPool *pool, 
+                                                std::vector<int> *array_ptr,
+                                                std::function<bool(int)> condition, 
+                                                int part_size)
+{
+    std::vector< std::vector<int> > filtered_parts(array_ptr->size() / part_size);
+
+    // split array in parts and collect results in another vector
+    for (size_t part_start = 0; part_start < array_ptr->size(); part_start += part_size){
+        auto part_end = std::min(part_start + part_size - 1, array_ptr->size() - 1);
+
+        VectorSlice slice {array_ptr, part_start, part_end};
+
+        std::vector<int> filter_result;
+        auto task = std::bind(array_operation::filter, slice, condition, &filter_result);
+        pool->addTaskToGroup(task);
+        filtered_parts.emplace_back(std::move(filter_result));
+    }
+    pool->waitGroupFinished();
+
+
+    // merge all filtered parts into one array
+    size_t total_size = 0;
+    for (auto& part : filtered_parts) { total_size += part.size(); }
+
+    std::vector<int> filtered;
+    filtered.reserve(total_size);
+    
+    for (auto& part : filtered_parts){
+        if (!part.empty()){
+            filtered.insert(filtered.end(), part.begin(), part.end());
+        }
+    }
+
+    return filtered;
+}
+
+void array_operation::sort(std::vector<int> *array){
+    std::sort(array->begin(), array->end());
 }

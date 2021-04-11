@@ -8,7 +8,6 @@ add_executable(lab4
     main.cpp 
     thread_pool/ThreadPool.cpp 
     thread_pool/ThreadExecutor.cpp 
-    thread_pool/TaskGroup.cpp 
     array_operations.cpp
     concurrent_console.cpp
 )

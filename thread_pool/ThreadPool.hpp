@@ -7,7 +7,6 @@ class TaskGroup;
 #include <list>
 #include <future>
 #include "ThreadExecutor.hpp"
-#include "TaskGroup.hpp"
 
 
 class ThreadPool
@@ -19,10 +18,13 @@ public:
 	~ThreadPool();
 
 	std::future<void> addTask(std::function<void()> function);
-	TaskGroup createTaskGroup();
+	void addTaskToGroup(std::function<void()> function);
+	void waitGroupFinished();
 	void stopAll();
 
 private:
+	std::list<std::future<void>> scheduled_futures_;
+
 	std::vector<ThreadExecutor*> executors_;
 	ThreadExecutor* findBestExecutor();
 };

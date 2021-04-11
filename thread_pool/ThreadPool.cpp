@@ -25,10 +25,6 @@ ThreadPool::~ThreadPool()
     }
 }
 
-TaskGroup ThreadPool::createTaskGroup(){
-    return TaskGroup(this);
-}
-
 std::future<void> ThreadPool::addTask(std::function<void()> function) 
 {
     ThreadExecutor* min_executor = findBestExecutor();
@@ -48,6 +44,18 @@ ThreadExecutor* ThreadPool::findBestExecutor(){
         }
     }
     return min_executor;
+}
+
+void ThreadPool::addTaskToGroup(std::function<void()> function){
+    auto task_future = addTask(function);
+    scheduled_futures_.emplace_back(std::move(task_future));
+}
+
+void ThreadPool::waitGroupFinished(){
+    for (auto& future : scheduled_futures_){
+        future.get();
+    }
+    scheduled_futures_.clear();
 }
 
 void ThreadPool::stopAll()
