@@ -27,6 +27,4 @@ private:
 	ThreadExecutor* findBestExecutor();
 };
 
-template std::future<std::vector<int>> ThreadPool::addTaskWithResult(std::function<std::vector<int>()>);
-
 #endif

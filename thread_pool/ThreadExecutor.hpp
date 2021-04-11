@@ -16,12 +16,13 @@ public:
 	ThreadExecutor();
 	~ThreadExecutor();
 
-	// adds new task to queue, resumes execution for first task added
+	// MUST NOT add tasks, that temselves will add tasks to this ThreadPool. This will create a deadlock
 	std::future<void> addTask(std::function<void()> task);
+
 	// waits for all tasks to finish, than returns
 	void stop();
-	bool isExecuting() const;
-	int task_count() const;
+	bool isExecuting() const noexcept;
+	int task_count() const noexcept;
 
 private:
 	struct ScheduledTask{

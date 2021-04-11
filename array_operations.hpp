@@ -9,8 +9,8 @@
 namespace array_operation{
     void filter(VectorSlice slice, std::function<bool(int)> condition, std::vector<int>* result);
     void findMedian(std::shared_ptr<std::vector<int>> array, int* median);
-    std::vector<int> merge(std::vector<int> first, std::vector<int> second);
-    void initializeRandom(std::shared_ptr< std::vector<int> > array);
+    std::vector<int> merge(const std::vector<int>& first, const std::vector<int>& second);
+    void initializeRandom(std::shared_ptr<std::vector<int>> array);
     void print(const std::vector<int>& array);
 }
 

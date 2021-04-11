@@ -15,8 +15,8 @@
 #include "thread_pool/ThreadPool.hpp"
 #include "array_operations.hpp"
 
-#define ARRAY_SIZE 10
-#define MAX_PART_SIZE 1
+#define ARRAY_SIZE 20
+#define MAX_PART_SIZE 5
 
 
 std::vector<int> filterArrayParallel(std::shared_ptr<ThreadPool> pool, 
@@ -55,20 +55,24 @@ std::vector<int> filterArrayParallel(std::shared_ptr<ThreadPool> pool,
 }
 
 
-void transformMedianArray(std::shared_ptr<ThreadPool> pool, std::shared_ptr< std::vector<int> > array_ptr){
+std::vector<int> filterByMedian(std::shared_ptr<ThreadPool> pool, std::shared_ptr< std::vector<int> > array_ptr){
 
     int median_index = 0;
     auto future_median = pool->addTask(std::bind(array_operation::findMedian, array_ptr, &median_index));
     future_median.get();
 
     int median_element = (*array_ptr)[median_index];
-    std::vector<int> filtered_array;
 
     std::function<bool(int)> isLessMedian = [median_element] (int element) {
         return element < median_element;
     };
 
-    auto result = filterArrayParallel(pool, array_ptr, isLessMedian);
+    return filterArrayParallel(pool, array_ptr, isLessMedian);
+}
+
+std::vector<int> filterIfEven(std::shared_ptr<ThreadPool> pool, std::shared_ptr< std::vector<int> > array_ptr){
+    auto mod2filter = [](int elem) {return elem % 2 == 0;};
+    return filterArrayParallel(pool, array_ptr, mod2filter);
 }
 
 
@@ -87,23 +91,22 @@ int main() {
 
     task_group.waitTasksFinished();
     
-    // task_group.addTask(std::bind(transformMedianArray, main_pool_ptr, array_ptr_1));
-    
-    auto testFilter = [](int elem) {return elem % 2 == 0;};
-    std::shared_ptr<std::vector<int>> result_ptr(new std::vector<int>());
+    auto future_filter_1 = std::async(std::bind(filterByMedian, main_pool_ptr, array_ptr_1));
+    auto future_filter_2 = std::async(std::bind(filterIfEven, main_pool_ptr, array_ptr_2));
 
-    auto filterWrapper = [main_pool_ptr, array_ptr_2, testFilter, result_ptr]()
-    {
-        auto filtered = filterArrayParallel(main_pool_ptr, array_ptr_2, testFilter);
-        result_ptr->insert(result_ptr->begin(), filtered.begin(), filtered.end()); 
-    };
+    auto filtered_1 = std::shared_ptr<std::vector<int>>(&future_filter_1.get());
+    auto filtered_2 = std::shared_ptr<std::vector<int>>(&future_filter_2.get());
 
-    main_pool.addTask(filterWrapper).get();
-    array_operation::print(*result_ptr);
+    task_group.addTask([filtered_1](){std::sort(filtered_1->begin(), filtered_1->end());});
+    task_group.addTask([filtered_2](){std::sort(filtered_2->begin(), filtered_2->end());});
+    task_group.addTask([array_ptr_3](){std::sort(array_ptr_3->begin(), array_ptr_3->end());});
 
-    // array_operation::print(array_1);
-    // array_operation::print(array_2);
-    // array_operation::print(array_3);
+    task_group.waitTasksFinished();
+
+    auto filtered_merged = array_operation::merge(*filtered_1, *filtered_2);
+    auto result = array_operation::merge(filtered_merged, *array_ptr_3);
+
+    array_operation::print(result);
 
     main_pool.stopAll();
     return 0;

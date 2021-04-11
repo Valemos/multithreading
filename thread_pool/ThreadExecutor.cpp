@@ -13,10 +13,6 @@ ThreadExecutor::~ThreadExecutor()
     stop();
 }
 
-int ThreadExecutor::task_count() const{
-    return task_queue_.size();
-}
-
 void ThreadExecutor::execute(){
     while (true){
         if (task_queue_.size() > 0){
@@ -41,7 +37,11 @@ void ThreadExecutor::waitForTask(){
     cond_no_tasks_.wait(lock);
 }
 
-bool ThreadExecutor::isExecuting() const{
+int ThreadExecutor::task_count() const noexcept{
+    return task_queue_.size();
+}
+
+bool ThreadExecutor::isExecuting() const noexcept{
     return !finish_execution_;
 }
 
