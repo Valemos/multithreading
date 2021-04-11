@@ -13,6 +13,6 @@ namespace console {
     extern void printListElement(T value);
 }
 
-#include "concurrent_console.cpp"
+template void console::printListElement(int value);
 
 #endif /* CONCURRENT_CONSOLE_H */

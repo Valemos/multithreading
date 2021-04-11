@@ -10,6 +10,7 @@ add_executable(lab4
     thread_pool/ThreadExecutor.cpp 
     thread_pool/TaskGroup.cpp 
     array_operations.cpp
+    concurrent_console.cpp
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

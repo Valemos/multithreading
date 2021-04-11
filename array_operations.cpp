@@ -3,7 +3,6 @@
 #include <iostream>
 #include <random>
 #include <chrono>
-
 #include "concurrent_console.hpp"
 
 void array_operation::findMedian(std::shared_ptr<std::vector<int>> array, int* median) {

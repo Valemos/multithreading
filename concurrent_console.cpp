@@ -2,7 +2,6 @@
 
 #include <iostream>
 
-
 std::mutex console::m_output;
 
 void console::print(std::string value) {

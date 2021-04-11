@@ -14,9 +14,11 @@
 #include <memory>
 #include "thread_pool/ThreadPool.hpp"
 #include "array_operations.hpp"
+#include "concurrent_console.hpp"
 
-#define ARRAY_SIZE 20
-#define MAX_PART_SIZE 5
+
+#define ARRAY_SIZE 10000
+#define MAX_PART_SIZE 200
 
 
 std::vector<int> filterArrayParallel(std::shared_ptr<ThreadPool> pool, 
@@ -25,6 +27,7 @@ std::vector<int> filterArrayParallel(std::shared_ptr<ThreadPool> pool,
 {
     std::vector< std::vector<int> > filtered_parts(array_ptr->size() / MAX_PART_SIZE);
 
+    // split array in parts and collect results in another vector
     auto array_filter_tasks = pool->createTaskGroup();
     for (size_t part_start = 0; part_start < array_ptr->size(); part_start += MAX_PART_SIZE){
         auto part_end = std::min(part_start + MAX_PART_SIZE - 1, array_ptr->size() - 1);
@@ -38,13 +41,14 @@ std::vector<int> filterArrayParallel(std::shared_ptr<ThreadPool> pool,
     }
     array_filter_tasks.waitTasksFinished();
 
+
+    // merge all filtered parts into one array
     size_t total_size = 0;
-    for (auto& part : filtered_parts){
-        total_size += part.size();
-    }
+    for (auto& part : filtered_parts) { total_size += part.size(); }
+
     std::vector<int> filtered;
     filtered.reserve(total_size);
-
+    
     for (auto& part : filtered_parts){
         if (!part.empty()){
             filtered.insert(filtered.end(), part.begin(), part.end());
@@ -106,8 +110,7 @@ int main() {
     auto filtered_merged = array_operation::merge(*filtered_1, *filtered_2);
     auto result = array_operation::merge(filtered_merged, *array_ptr_3);
 
-    array_operation::print(result);
-
     main_pool.stopAll();
+    console::print("finished");
     return 0;
 }
