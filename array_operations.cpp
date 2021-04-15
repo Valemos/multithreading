@@ -6,13 +6,49 @@
 #include <algorithm>
 #include "concurrent_console.hpp"
 
+
+int partition(std::vector<int>& arr, size_t left, size_t right)
+{
+    int x = arr[right], i = left;
+    for (int j = left; j <= right - 1; j++) {
+        if (arr[j] <= x) {
+            std::swap(arr[i], arr[j]);
+            i++;
+        }
+    }
+    std::swap(arr[i], arr[right]);
+    return i;
+}
+
+// quickselect algorithm
+int kthSmallest(std::vector<int>& array, size_t left, size_t right, size_t search_position)
+{
+    if (search_position > 0 && search_position <= right - left + 1) {
+ 
+        size_t index = partition(array, left, right);
+ 
+        if (index - left == search_position - 1)
+            return array[index];
+ 
+        // recur for left subarray
+        if (index - left > search_position - 1)
+            return kthSmallest(array, left, index - 1, search_position);
+ 
+        // recur for right subarray
+        return kthSmallest(array, index + 1, right, search_position - index + left - 1);
+    }
+    
+    return INT_MAX;
+}
+
 void array_operation::findMedian(std::vector<int> *array, int* median) {
-    *median = 42;
-    // todo write quick select
+    size_t median_index = array->size() % 2 != 0 ? array->size() / 2 : array->size() / 2 + 1;
+    *median = kthSmallest(std::vector<int>(*array), 0, array->size() - 1, median_index);
 }
 
 void array_operation::filter(VectorSlice slice, std::function<bool(int)> condition, std::vector<int>* result){
     auto array = *slice.array_ptr;
+    
     for (int i = slice.start; i <= slice.end; i++){
         int element = array[i];
         if (condition(element)){
@@ -70,7 +106,7 @@ std::vector<int> array_operation::filterParallel(ThreadPool *pool,
                                                 std::function<bool(int)> condition, 
                                                 int part_size)
 {
-    std::vector< std::vector<int> > filtered_parts(array_ptr->size() / part_size);
+    std::vector< std::future<std::vector<int>> > filter_results;
 
     // split array in parts and collect results in another vector
     for (size_t part_start = 0; part_start < array_ptr->size(); part_start += part_size){
@@ -78,17 +114,17 @@ std::vector<int> array_operation::filterParallel(ThreadPool *pool,
 
         VectorSlice slice {array_ptr, part_start, part_end};
 
-        std::vector<int> filter_result;
-        auto task = std::bind(array_operation::filter, slice, condition, &filter_result);
-        pool->addTaskToGroup(task);
-        filtered_parts.emplace_back(std::move(filter_result));
+        filter_results.emplace_back(std::bind(array_operation::filter, slice, condition));
     }
-    pool->waitGroupFinished();
 
 
     // merge all filtered parts into one array
     size_t total_size = 0;
-    for (auto& part : filtered_parts) { total_size += part.size(); }
+    std::vector< std::vector<int> > filtered_parts;
+    for (auto& result : filter_results) {
+        auto part = filtered_parts.emplace_back(result.get());
+        total_size += part.size();
+    }
 
     std::vector<int> filtered;
     filtered.reserve(total_size);
