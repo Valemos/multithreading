@@ -1,8 +1,6 @@
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
 
-class TaskGroup;
-
 #include <vector>
 #include <list>
 #include <future>

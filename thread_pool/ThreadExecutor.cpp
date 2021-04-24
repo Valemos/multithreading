@@ -50,6 +50,8 @@ std::future<void> ThreadExecutor::addTask(std::function<void()> function) {
     // must not be called after join command. check before adding task with isExecuting()
     if (finish_execution_) throw std::exception("executor is being joined!");
 
+    std::lock_guard<std::mutex> lock(m_add_task_);
+
     std::promise<void> promise_result;
     auto future_task = promise_result.get_future(); // must create future before promise moved
     task_queue_.push_back({function, std::move(promise_result)});

@@ -16,7 +16,8 @@ public:
 	ThreadExecutor();
 	~ThreadExecutor();
 
-	// MUST NOT add tasks, that temselves will add tasks to this ThreadPool. This will create a deadlock
+	// MUST NOT add tasks, that temselves will add tasks to this ThreadPool. 
+	// This will create a deadlock
 	std::future<void> addTask(std::function<void()> task);
 
 	// waits for all tasks to finish, than returns
@@ -35,7 +36,7 @@ private:
 	std::mutex m_add_task_;
 	std::mutex m_no_tasks_;
 	std::condition_variable cond_no_tasks_;
-	bool finish_execution_; // when set to true will finish executing all tasks and stop execution
+	bool finish_execution_;
 
 	// endless loop running tasks
 	void execute();

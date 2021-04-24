@@ -7,10 +7,11 @@
 #include "concurrent_console.hpp"
 
 
-int partition(std::vector<int>& arr, size_t left, size_t right)
+size_t partition(std::vector<int>& arr, size_t left, size_t right)
 {
-    int x = arr[right], i = left;
-    for (int j = left; j <= right - 1; j++) {
+    int x = arr[right];
+    size_t i = left;
+    for (size_t j = left; j <= right - 1; j++) {
         if (arr[j] <= x) {
             std::swap(arr[i], arr[j]);
             i++;
@@ -25,17 +26,17 @@ int kthSmallest(std::vector<int>& array, size_t left, size_t right, size_t searc
 {
     if (search_position > 0 && search_position <= right - left + 1) {
  
-        size_t index = partition(array, left, right);
+        size_t partition_center = partition(array, left, right);
  
-        if (index - left == search_position - 1)
-            return array[index];
+        if (partition_center - left == search_position - 1)
+            return array[partition_center];
  
         // recur for left subarray
-        if (index - left > search_position - 1)
-            return kthSmallest(array, left, index - 1, search_position);
+        if (partition_center - left > search_position - 1)
+            return kthSmallest(array, left, partition_center - 1, search_position);
  
         // recur for right subarray
-        return kthSmallest(array, index + 1, right, search_position - index + left - 1);
+        return kthSmallest(array, partition_center + 1, right, search_position - partition_center + left - 1);
     }
     
     return INT_MAX;
@@ -49,7 +50,9 @@ void array_operation::findMedian(std::vector<int> *array, int* median) {
 void array_operation::filter(VectorSlice slice, std::function<bool(int)> condition, std::vector<int>* result){
     auto array = *slice.array_ptr;
     
-    for (int i = slice.start; i <= slice.end; i++){
+    result->reserve(slice.end - slice.start);
+
+    for (size_t i = slice.start; i <= slice.end; i++){
         int element = array[i];
         if (condition(element)){
             result->emplace_back(element);
@@ -84,7 +87,7 @@ std::vector<int> array_operation::merge(const std::vector<int>& first, const std
 }
 
 void array_operation::initializeRandom(std::vector<int> *array){
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    unsigned seed = (unsigned) std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
     std::uniform_int_distribution<int> distribution;
 
@@ -106,7 +109,8 @@ std::vector<int> array_operation::filterParallel(ThreadPool *pool,
                                                 std::function<bool(int)> condition, 
                                                 int part_size)
 {
-    std::vector< std::future<std::vector<int>> > filter_results;
+    std::vector< std::vector<int>* > filter_results;
+    std::vector< std::future<void> > filter_futures;
 
     // split array in parts and collect results in another vector
     for (size_t part_start = 0; part_start < array_ptr->size(); part_start += part_size){
@@ -114,25 +118,29 @@ std::vector<int> array_operation::filterParallel(ThreadPool *pool,
 
         VectorSlice slice {array_ptr, part_start, part_end};
 
-        filter_results.emplace_back(std::bind(array_operation::filter, slice, condition));
+
+        filter_results.emplace_back(new std::vector<int>());
+
+        auto filter_future = pool->addTask(std::bind(array_operation::filter, slice, condition, filter_results.back()));
+        filter_futures.emplace_back(std::move(filter_future));
     }
 
 
     // merge all filtered parts into one array
     size_t total_size = 0;
-    std::vector< std::vector<int> > filtered_parts;
-    for (auto& result : filter_results) {
-        auto part = filtered_parts.emplace_back(result.get());
-        total_size += part.size();
+    for (size_t i = 0; i < filter_futures.size(); i++) {
+        filter_futures[i].get();
+        total_size += filter_results[i]->size();
     }
 
     std::vector<int> filtered;
     filtered.reserve(total_size);
     
-    for (auto& part : filtered_parts){
-        if (!part.empty()){
-            filtered.insert(filtered.end(), part.begin(), part.end());
+    for (auto& part : filter_results){
+        if (!part->empty()){
+            filtered.insert(filtered.end(), part->begin(), part->end());
         }
+        delete part;
     }
 
     return filtered;

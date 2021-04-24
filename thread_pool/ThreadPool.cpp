@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <thread>
+#include <stdexcept>
 
 ThreadPool::ThreadPool() : 
     ThreadPool(std::thread::hardware_concurrency() - 1)
