@@ -59,7 +59,7 @@ void array_operation::filter(VectorSlice slice, std::function<bool(int)> conditi
         }
     }
 
-    console::print("filtered " + std::to_string(slice.start) + "-" + std::to_string(slice.end));
+    // console::print("filtered " + std::to_string(slice.start) + "-" + std::to_string(slice.end));
 }
 
 std::vector<int> array_operation::merge(const std::vector<int>& first, const std::vector<int>& second)
@@ -94,7 +94,7 @@ void array_operation::initializeRandom(std::vector<int> *array){
     for (auto& elem : *array){
         elem = distribution(generator);
     }
-    console::print("generated");
+    // console::print("generated");
 }
 
 void array_operation::print(const std::vector<int>& array){
@@ -107,7 +107,7 @@ void array_operation::print(const std::vector<int>& array){
 std::vector<int> array_operation::filterParallel(ThreadPool *pool, 
                                                 std::vector<int> *array_ptr,
                                                 std::function<bool(int)> condition, 
-                                                int part_size)
+                                                size_t part_size)
 {
     std::vector< std::vector<int>* > filter_results;
     std::vector< std::future<void> > filter_futures;

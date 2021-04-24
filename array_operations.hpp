@@ -14,7 +14,7 @@ namespace array_operation{
     std::vector<int> filterParallel(ThreadPool *pool, 
                                     std::vector<int> *array_ptr, 
                                     std::function<bool(int)> condition, 
-                                    int split_size);
+                                    size_t split_size);
     
     void findMedian(std::vector<int> *array, int* median);
     void sort(std::vector<int> *array);
